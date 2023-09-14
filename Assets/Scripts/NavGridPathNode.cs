@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public struct NavGridPathSegment
+public struct NavGridPathNode
 {
     /// <summary>
     /// World position of the node

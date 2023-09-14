@@ -1,16 +1,16 @@
+using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class Player : MonoBehaviour
 {
-    public NavGrid Grid;
-    public Vector3 Destination;
-    public float Speed = 10.0f;
+    private NavGridPathNode[] _currentPath = Array.Empty<NavGridPathNode>();
+    private int _currentPathIndex = 0;
     
-    void Start()
-    {
-        Destination = transform.position;
-        Grid.Initialize();
-    }
+    [SerializeField]
+    private NavGrid _grid;
+    [SerializeField]
+    private float _speed = 10.0f;
 
     void Update()
     {
@@ -19,17 +19,23 @@ public class Player : MonoBehaviour
             var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             if (Physics.Raycast(ray, out var hitInfo))
             {
-                Destination = Grid.GetPath(transform.position, hitInfo.point)[^1].Position;
+                _currentPath = _grid.GetPath(transform.position, hitInfo.point);
+                _currentPathIndex = 0;
             }
         }
 
-        if (transform.position != Destination)
+        if (_currentPathIndex < _currentPath.Length)
         {
-            var maxDistance = Speed * Time.deltaTime;
-            var vectorToDestination = Destination - transform.position;
+            var currentNode = _currentPath[_currentPathIndex];
+            
+            var maxDistance = _speed * Time.deltaTime;
+            var vectorToDestination = currentNode.Position - transform.position;
             var moveDistance = Mathf.Min(vectorToDestination.magnitude, maxDistance);
             
             transform.position += vectorToDestination.normalized * moveDistance;
+
+            if (transform.position == currentNode.Position)
+                _currentPathIndex++;
         }
     }
 }
