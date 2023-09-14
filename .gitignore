@@ -26,6 +26,12 @@
 # Visual Studio cache directory
 .vs/
 
+# JetBrains cache
+.idea
+
+# Mac
+.DS_Store
+
 # Gradle cache directory
 .gradle/
 
