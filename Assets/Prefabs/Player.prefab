@@ -156,6 +156,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Grid: {fileID: 0}
+  Destination: {x: 0, y: 0, z: 0}
+  Speed: 10
 --- !u!33 &8618333106129401312
 MeshFilter:
   m_ObjectHideFlags: 0
