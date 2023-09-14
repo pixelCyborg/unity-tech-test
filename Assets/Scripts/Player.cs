@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 public class Player : MonoBehaviour
 {
@@ -14,6 +13,7 @@ public class Player : MonoBehaviour
 
     void Update()
     {
+        // Check Input
         if (Input.GetMouseButtonUp(0))
         {
             var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -24,6 +24,7 @@ public class Player : MonoBehaviour
             }
         }
 
+        // Traverse
         if (_currentPathIndex < _currentPath.Length)
         {
             var currentNode = _currentPath[_currentPathIndex];
@@ -31,8 +32,10 @@ public class Player : MonoBehaviour
             var maxDistance = _speed * Time.deltaTime;
             var vectorToDestination = currentNode.Position - transform.position;
             var moveDistance = Mathf.Min(vectorToDestination.magnitude, maxDistance);
-            
-            transform.position += vectorToDestination.normalized * moveDistance;
+
+            var moveVector = vectorToDestination.normalized * moveDistance;
+            moveVector.y = 0f; // Ignore Y
+            transform.position += moveVector;
 
             if (transform.position == currentNode.Position)
                 _currentPathIndex++;
