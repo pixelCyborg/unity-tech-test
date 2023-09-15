@@ -21,7 +21,7 @@ To begin the project, follow these steps:
 1. Clone this repository to your local machine:
 
    ```shell
-   git clone https://github.com/your-username/unity-tech-test.git
+   git clone https://github.com/pocketzworld/unity-tech-test.git
 
 2. Create a Unity project or use an existing one.
 
