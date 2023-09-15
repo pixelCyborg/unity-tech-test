@@ -5,11 +5,11 @@ Welcome to the Pocket Worlds Unity Pathfinding Take-Home Project! In this reposi
 This project will serve as the primary jumping off point for our technical interviews.
 
 ## Project Description
+We've already put together a project that has the foundations of what you need to get started. Please use it as a starting point and build your solution on top of it.
+
 Your task is to build a Unity project that meets the following requirements:
 
 1. **Pathfinding Implementation**: Develop a custom pathfinding system without using Unity's NavMesh system. You are free to choose any pathfinding algorithm you prefer, such as A* or Dijkstra's algorithm.
-
-2. **Player Control**: Allow the player to control a simple character by clicking in the game world. The character should move toward the clicked location while avoiding obstacles.
 
 3. **2D Grid**: Implement the pathfinding on a 2D grid where each cell represents either an impassable obstacle or a clear area. You have the flexibility to determine how this grid data is populated. Options include creating an editor tool to author it, automatically generating it from scene geometry, procedural generation, or any other method of your choice.
 
@@ -21,7 +21,7 @@ To begin the project, follow these steps:
 1. Clone this repository to your local machine:
 
    ```shell
-   git clone https://github.com/your-username/unity-pathfinding-takehome.git
+   git clone https://github.com/your-username/unity-tech-test.git
 
 2. Create a Unity project or use an existing one.
 
