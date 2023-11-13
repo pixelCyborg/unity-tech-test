@@ -21,8 +21,7 @@ public class Map : MonoBehaviour
     [SerializeField] private Transform _tileRoot; //Parent transform to spawn tiles under
 
     [Header("Prefabs")]
-    [SerializeField] private GameObject _emptyTile;
-    [SerializeField] private GameObject _obstacleTile;
+    [SerializeField] private GameObject[] _tilePrefabs; //Our tile prefab refs. Index corresponds to tile value
 
     private void Start()
     {
@@ -39,8 +38,11 @@ public class Map : MonoBehaviour
     public void GenerateMap(int width, int height)
     {
         //Make sure we have a valid config
-        if (width == 0 || height == 0) 
+        if (width < 1 || height < 1)
+        {
             Debug.LogError("Invalid map config. Width & Height need to be > 0");
+            return;
+        }
 
         //Create a 2D array with the provided dimensions
         Grid = new Tile[width, height];
@@ -63,14 +65,59 @@ public class Map : MonoBehaviour
     //Generate a 3D representation of our map
     public void RenderMap()
     {
+        if(_tileRoot == null)
+        {
+            Debug.LogError("No tile root transform found, please assign one");
+            return;
+        }
+        if(Grid == null)
+        {
+            Debug.LogError("Grid data must be generated first");
+            return;
+        }
+
+        ClearMap(); //Clear out previous map if there is one
         for(int x = 0; x < Grid.GetLength(0); x++) //Rows
         {
             for (int y = 0; y < Grid.GetLength(1); y++) //Columns
             {
+                if(Grid[x, y] == null)
+                {
+                    Debug.LogError($"No grid tile created at: [{x},{y}]");
+                    continue;
+                }
+
+                GameObject prefab = _tilePrefabs[Grid[x, y].Value];
+                if (prefab == null) continue; //If prefab is null, tile is empty
+
+                //Determine instantiation pos
                 Vector3 localPos = Vector3.zero;
                 localPos.x = x * _scale;
                 localPos.z = y * _scale;
+
+                localPos.x -= ((Grid.GetLength(0) - 1) / 2f) * _scale;
+                localPos.z -= ((Grid.GetLength(1) - 1) / 2f) * _scale;
+
+                GameObject go = Instantiate(prefab, _tileRoot);
+                go.name = $"Tile [{x},{y}]";
+                go.transform.localPosition = localPos;
+                go.transform.localScale = Vector3.one * _scale;
             }
+        }
+    }
+
+    //Clear out our previous map
+    public void ClearMap()
+    {
+        if (_tileRoot == null)
+        {
+            Debug.LogError("No tile root transform found, please assign one");
+            return;
+        }
+
+        for(int i = _tileRoot.childCount - 1; i >= 0; i--) //Iterate backwards through children and destroy them
+        {
+            DestroyImmediate(_tileRoot.GetChild(i).gameObject);
         }
     }
 }
