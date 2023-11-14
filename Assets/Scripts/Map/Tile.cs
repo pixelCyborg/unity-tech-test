@@ -12,7 +12,7 @@ public class Tile
     //1: Obstacle
     //more to come?
 
-    public bool Empty => Value == 0; //A simple bool property for shorthand checking empty tiles
+    public bool Walkable => Value == 0; //A simple bool property for shorthand checking empty tiles
 
     //Constructor, all tiles should have a value set intentionally
     public Tile(int value)

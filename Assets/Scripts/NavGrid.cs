@@ -1,15 +1,63 @@
 using UnityEngine;
+using System.Collections.Generic;
+using System.Collections;
 
+/// <summary>
+/// Given the current and desired location, return a path to the destination.
+/// 
+/// HC NOTES
+/// =============
+/// This class should solely be used for navigation purposes. We are going to get the data from our Map class
+/// and then process it here for navigation
+/// </summary>
+/// 
 public class NavGrid : MonoBehaviour
 {
-    /// <summary>
-    /// Given the current and desired location, return a path to the destination.
-    /// 
-    /// HC NOTES
-    /// =============
-    /// This class should solely be used for navigation purposes. We are going to get the data from our Map class
-    /// and then process it here for navigation
-    /// </summary>
+    #region STRUCTS
+    //Simple struct to store our 2D map indexes
+    public struct Coord
+    {
+        public int X;
+        public int Y;
+        public float Value;
+
+
+        public Coord(int x, int y, float value)
+        {
+            X = x;
+            Y = y;
+            Value = value;
+        }
+        public Coord(int x, int y)
+        {
+            X = x;
+            Y = y;
+            Value = 0;
+        }
+
+        //Get Property so we can easily calculate Vector2.Distance
+        public Vector2 ToVector
+        {
+            get { return new Vector2(X, Y); }
+        }
+
+        public static bool operator ==(Coord c1, Coord c2)
+        {
+            return c1.X == c2.X && c1.Y == c2.Y;
+        }
+        public static bool operator !=(Coord c1, Coord c2)
+        {
+            return c1.X != c2.X && c1.Y != c2.Y;
+        }
+    }
+    #endregion
+
+    [Header("Configuration")]
+    [SerializeField] private float _timeStep = 0.1f;
+
+    [Header("References")]
+    [SerializeField] private Map _map;
+
     public NavGridPathNode[] GetPath(Vector3 origin, Vector3 destination)
     {
         return new NavGridPathNode[]
@@ -17,5 +65,97 @@ public class NavGrid : MonoBehaviour
             new() { Position = origin },
             new() { Position = destination }
         };
+    }
+
+    //G Cost = Distance from starting node
+    //H Cost = Distance from end node
+    //F Cost = G + H Cost;
+
+    //Basic Algorithm:
+    //1. Calculate F Cost from nodes sorrounding origin
+    //2. Repeat above for lowest F Node cost.
+    //3. Rinse and repeat, ignoring paths that lead us to walls
+    //3a. If we find a lower FCost while calculating neighbors, replace that in our algorithm history
+    private void CalculatePath(Coord origin, Coord destination)
+    {
+        //Create our cache of calculated nodes. Somewhat redundant now that value is stored in coord
+        Dictionary<Coord, float> costs = new Dictionary<Coord, float>();
+        //The cache for our current route. If we run into dead ends we can pop the stat
+        Stack<Coord> route = new Stack<Coord>();
+        //The border list is our buffer for tiles we want to check. Treat this as a jank priority queue
+        //Since Unity's C# version doesn't have one
+        //To make this more efficient we could implement our own priority queue
+        List<Coord> border = new List<Coord>();
+        
+        //Add our initial tile to the border
+        origin.Value = GetFCost(origin, origin, destination);
+        costs.Add(origin, origin.Value); //Cache the cost
+        border.Insert(0, (origin));
+
+        //Start iterating through neighbors
+        while (border.Count > 0)
+        {
+            Coord current = border[0];
+            border.RemoveAt(0); //Dequeue 
+
+            Coord[] neighbors = GetNeighbors(current.X, current.Y);
+            if (neighbors.Length == 0) continue; //If there is no viable spot to go, move on to next border
+
+            //If we have arrived at our destination, end the loop early
+            if (current == destination) break;
+
+            ///Cache for picking our next best option
+            Coord lowestCostNeighbor = new Coord(0,0,-1);
+
+            //Check all walkable neighbors of current tile
+            foreach (Coord neighbor in neighbors)
+            {
+                //Calculate our cost if it is a movable area. Otherwise cost is -1
+                float cost = GetFCost(origin, neighbor, destination);
+
+                //Cache the cost
+
+                //If this is a valid tile and cheaper FCost, cache it
+                if (cost >= 0 && cost < lowestCostNeighbor.Value)
+                {
+                    lowestCostNeighbor = neighbor;
+                    lowestCostNeighbor.Value = cost;
+                }
+            }
+
+        }
+    }
+
+    //A simple function to get a list of neighboring indexes
+    private Coord[] GetNeighbors(int origX, int origY)
+    {
+        //Check neighbors. Since this is grid-based there are 8 directions to check
+        List<Coord> neighbors = new List<Coord>();
+        for(int x = origX - 1; x <= origX + 1; x++)
+        {
+            //Check for out of bounds X
+            if (x < 0 || x >= _map.Grid.GetLength(0)) continue;
+            for (int y = origY - 1; y <= origY + 1; y++)
+            {
+                //Check for out of bounds Y
+                if (y < 0 || y >= _map.Grid.GetLength(1)) continue;
+                //Also skip if this is the origin
+                if (origX == x && origY == y) continue;
+                //If this tile is not walkable, skip
+                if (!_map.Grid[x, y].Walkable) continue;
+                //Add to list of possible neighbors if all conditions are met
+                neighbors.Add(new Coord(x, y));
+            }
+        }
+
+        return neighbors.ToArray();
+    }
+
+    //Calculate the total cost of this node using the built in Vector2.Distance function
+    private float GetFCost(Coord origin, Coord target, Coord destination)
+    {
+        float gCost = Vector2.Distance(origin.ToVector, target.ToVector);
+        float hCost = Vector2.Distance(target.ToVector, destination.ToVector);
+        return gCost + hCost;
     }
 }

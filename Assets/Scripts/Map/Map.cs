@@ -87,17 +87,20 @@ public class Map : MonoBehaviour
                     continue;
                 }
 
+                //Look for a prefab associated with the tile value
                 GameObject prefab = _tilePrefabs[Grid[x, y].Value];
-                if (prefab == null) continue; //If prefab is null, tile is empty
+                if (prefab == null) continue; //If no prefab available, skip this tile
 
                 //Determine instantiation pos
                 Vector3 localPos = Vector3.zero;
                 localPos.x = x * _scale;
                 localPos.z = y * _scale;
 
+                //We want our root point to be in the center, so offset the tile by halfway points
                 localPos.x -= ((Grid.GetLength(0) - 1) / 2f) * _scale;
                 localPos.z -= ((Grid.GetLength(1) - 1) / 2f) * _scale;
 
+                //Instantiate the object and place it accordingly
                 GameObject go = Instantiate(prefab, _tileRoot);
                 go.name = $"Tile [{x},{y}]";
                 go.transform.localPosition = localPos;
