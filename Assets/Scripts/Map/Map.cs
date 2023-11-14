@@ -94,7 +94,7 @@ public class Map : MonoBehaviour
                 //Instantiate the object and place it accordingly
                 GameObject go = Instantiate(prefab, _tileRoot);
                 go.name = $"Tile [{x},{y}]";
-                go.transform.localPosition = GetTilePos(x, y);
+                go.transform.position = GetTilePos(x, y);
                 go.transform.localScale = Vector3.one * _scale;
             }
         }
@@ -115,6 +115,11 @@ public class Map : MonoBehaviour
         }
     }
 
+    public Vector3 GetTilePos(NavGrid.Coord coord)
+    {
+        return GetTilePos(coord.X, coord.Y);
+    }
+
     public Vector3 GetTilePos(int x, int y)
     {
         //Determine instantiation pos
@@ -125,6 +130,6 @@ public class Map : MonoBehaviour
         //We want our root point to be in the center, so offset the tile by halfway points
         pos.x -= ((Grid.GetLength(0) - 1) / 2f) * _scale;
         pos.z -= ((Grid.GetLength(1) - 1) / 2f) * _scale;
-        return pos;
+        return _tileRoot.position + pos;
     }
 }

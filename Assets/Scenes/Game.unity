@@ -5920,6 +5920,16 @@ PrefabInstance:
       propertyPath: map
       value: 
       objectReference: {fileID: 1582637995}
+    - target: {fileID: 3484464229861482969, guid: 21f695034f50d4ba1ab0059a12cdc8bc,
+        type: 3}
+      propertyPath: _map
+      value: 
+      objectReference: {fileID: 1582637995}
+    - target: {fileID: 3484464229861482969, guid: 21f695034f50d4ba1ab0059a12cdc8bc,
+        type: 3}
+      propertyPath: _timeStep
+      value: 0.01
+      objectReference: {fileID: 0}
     - target: {fileID: 6067049099174111383, guid: 21f695034f50d4ba1ab0059a12cdc8bc,
         type: 3}
       propertyPath: m_LocalPosition.x

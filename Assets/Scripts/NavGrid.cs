@@ -76,7 +76,7 @@ public class NavGrid : MonoBehaviour
     //2. Repeat above for lowest F Node cost.
     //3. Rinse and repeat, ignoring paths that lead us to walls
     //3a. If we find a lower FCost while calculating neighbors, replace that in our algorithm history
-    private void CalculatePath(Coord origin, Coord destination)
+    private IEnumerator CalculatePath(Coord origin, Coord destination)
     {
         //Create our cache of calculated nodes. Somewhat redundant now that value is stored in coord
         Dictionary<Coord, float> costs = new Dictionary<Coord, float>();
@@ -119,9 +119,14 @@ public class NavGrid : MonoBehaviour
                     while(index < border.Count && cost > border[index].Value)
                         index++;
 
+                    costs.Add(neighbor, cost);
                     border.Insert(index, neighbor);
+                    Debug.DrawLine(_map.GetTilePos(current), _map.GetTilePos(neighbor), Color.cyan, 1f);
                 }
+                yield return new WaitForSeconds(_timeStep);
             }
+
+            yield return new WaitForSeconds(_timeStep);
         }
     }
 
@@ -143,6 +148,7 @@ public class NavGrid : MonoBehaviour
                 //If this tile is not walkable, skip
                 if (!_map.Grid[x, y].Walkable) continue;
                 //Add to list of possible neighbors if all conditions are met
+                Debug.DrawLine(_map.GetTilePos(origX, origX), _map.GetTilePos(x, y), Color.red, 0.25f);
                 neighbors.Add(new Coord(x, y));
             }
         }
@@ -156,5 +162,13 @@ public class NavGrid : MonoBehaviour
         float gCost = Vector2.Distance(origin.ToVector, target.ToVector);
         float hCost = Vector2.Distance(target.ToVector, destination.ToVector);
         return gCost + hCost;
+    }
+
+    [NaughtyAttributes.Button]
+    public void TestMap()
+    {
+        StartCoroutine(
+            CalculatePath(new Coord(0, 0), 
+            new Coord(_map.Grid.GetLength(0) - 1, _map.Grid.GetLength(1) - 1)));
     }
 }
