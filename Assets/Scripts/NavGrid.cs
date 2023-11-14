@@ -58,6 +58,9 @@ public class NavGrid : MonoBehaviour
     [Header("References")]
     [SerializeField] private Map _map;
 
+    [Header("Debug")]
+    [SerializeField] private List<float> borderValues;
+
     public NavGridPathNode[] GetPath(Vector3 origin, Vector3 destination)
     {
         return new NavGridPathNode[]
@@ -96,6 +99,7 @@ public class NavGrid : MonoBehaviour
         while (border.Count > 0)
         {
             Coord current = border[0];
+            route.Push(current);
             border.RemoveAt(0); //Dequeue
             
             //If we have arrived at our destination, end the loop early
@@ -116,17 +120,38 @@ public class NavGrid : MonoBehaviour
                 {
                     //Place tile in queue, ordered by ascending value
                     int index = 0;
-                    while(index < border.Count && cost > border[index].Value)
+                    while (index < border.Count && cost > border[index].Value)
+                    {
                         index++;
+                    }
 
                     costs.Add(neighbor, cost);
-                    border.Insert(index, neighbor);
-                    Debug.DrawLine(_map.GetTilePos(current), _map.GetTilePos(neighbor), Color.cyan, 1f);
+                    border.Insert(index, new Coord(neighbor.X, neighbor.Y, cost));
+                    Debug.DrawLine(_map.GetTilePos(neighbor), _map.GetTilePos(current), Color.cyan, 0.2f);
+
+                    //Debug. Disregard
+                    borderValues = new List<float>();
+                    foreach(Coord coord in border)
+                    {
+                        borderValues.Add(coord.Value);
+                    }
+                    //=================
                 }
                 yield return new WaitForSeconds(_timeStep);
             }
 
             yield return new WaitForSeconds(_timeStep);
+        }
+
+
+        //Draw our finished path
+        Coord prevCoord = route.Peek();
+        while(route.Count > 0)
+        {
+            Coord coord = route.Pop();
+            Debug.DrawLine(_map.GetTilePos(prevCoord), _map.GetTilePos(coord), Color.green, 3f);
+            prevCoord = coord;
+            yield return new WaitForSeconds(0.1f);
         }
     }
 
@@ -148,7 +173,6 @@ public class NavGrid : MonoBehaviour
                 //If this tile is not walkable, skip
                 if (!_map.Grid[x, y].Walkable) continue;
                 //Add to list of possible neighbors if all conditions are met
-                Debug.DrawLine(_map.GetTilePos(origX, origX), _map.GetTilePos(x, y), Color.red, 0.25f);
                 neighbors.Add(new Coord(x, y));
             }
         }
