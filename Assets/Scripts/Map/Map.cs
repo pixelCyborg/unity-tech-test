@@ -17,7 +17,7 @@ public class Map : MonoBehaviour
     [Range(0, 100)] [SerializeField] private int _obstacleChance; //% Chance for a tile to be an obstacle
 
     [Header("3D Config")]
-    [SerializeField] private float _scale = 1f;
+    [SerializeField] public float _scale = 1f;
     [SerializeField] private Transform _tileRoot; //Parent transform to spawn tiles under
 
     [Header("Prefabs")]
@@ -91,19 +91,10 @@ public class Map : MonoBehaviour
                 GameObject prefab = _tilePrefabs[Grid[x, y].Value];
                 if (prefab == null) continue; //If no prefab available, skip this tile
 
-                //Determine instantiation pos
-                Vector3 localPos = Vector3.zero;
-                localPos.x = x * _scale;
-                localPos.z = y * _scale;
-
-                //We want our root point to be in the center, so offset the tile by halfway points
-                localPos.x -= ((Grid.GetLength(0) - 1) / 2f) * _scale;
-                localPos.z -= ((Grid.GetLength(1) - 1) / 2f) * _scale;
-
                 //Instantiate the object and place it accordingly
                 GameObject go = Instantiate(prefab, _tileRoot);
                 go.name = $"Tile [{x},{y}]";
-                go.transform.localPosition = localPos;
+                go.transform.localPosition = GetTilePos(x, y);
                 go.transform.localScale = Vector3.one * _scale;
             }
         }
@@ -122,5 +113,18 @@ public class Map : MonoBehaviour
         {
             DestroyImmediate(_tileRoot.GetChild(i).gameObject);
         }
+    }
+
+    public Vector3 GetTilePos(int x, int y)
+    {
+        //Determine instantiation pos
+        Vector3 pos = Vector3.zero;
+        pos.x = x * _scale;
+        pos.z = y * _scale;
+
+        //We want our root point to be in the center, so offset the tile by halfway points
+        pos.x -= ((Grid.GetLength(0) - 1) / 2f) * _scale;
+        pos.z -= ((Grid.GetLength(1) - 1) / 2f) * _scale;
+        return pos;
     }
 }

@@ -90,22 +90,19 @@ public class NavGrid : MonoBehaviour
         //Add our initial tile to the border
         origin.Value = GetFCost(origin, origin, destination);
         costs.Add(origin, origin.Value); //Cache the cost
-        border.Insert(0, (origin));
+        border.Insert(0, (origin)); //Insert at beginning
 
         //Start iterating through neighbors
         while (border.Count > 0)
         {
             Coord current = border[0];
-            border.RemoveAt(0); //Dequeue 
-
-            Coord[] neighbors = GetNeighbors(current.X, current.Y);
-            if (neighbors.Length == 0) continue; //If there is no viable spot to go, move on to next border
-
+            border.RemoveAt(0); //Dequeue
+            
             //If we have arrived at our destination, end the loop early
             if (current == destination) break;
 
-            ///Cache for picking our next best option
-            Coord lowestCostNeighbor = new Coord(0,0,-1);
+            Coord[] neighbors = GetNeighbors(current.X, current.Y);
+            if (neighbors.Length == 0) continue; //If there is no viable spot to go, move on to next border
 
             //Check all walkable neighbors of current tile
             foreach (Coord neighbor in neighbors)
@@ -113,16 +110,18 @@ public class NavGrid : MonoBehaviour
                 //Calculate our cost if it is a movable area. Otherwise cost is -1
                 float cost = GetFCost(origin, neighbor, destination);
 
-                //Cache the cost
-
-                //If this is a valid tile and cheaper FCost, cache it
-                if (cost >= 0 && cost < lowestCostNeighbor.Value)
+                //Cache the cost if we haven't cached a more effective value already
+                //This means we should add this neighbor to our border list
+                if(!costs.ContainsKey(neighbor) || costs[neighbor] > cost)
                 {
-                    lowestCostNeighbor = neighbor;
-                    lowestCostNeighbor.Value = cost;
+                    //Place tile in queue, ordered by ascending value
+                    int index = 0;
+                    while(index < border.Count && cost > border[index].Value)
+                        index++;
+
+                    border.Insert(index, neighbor);
                 }
             }
-
         }
     }
 
