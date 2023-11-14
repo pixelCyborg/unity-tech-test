@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Collections;
+using System;
 
 /// <summary>
 /// Given the current and desired location, return a path to the destination.
@@ -15,11 +16,13 @@ public class NavGrid : MonoBehaviour
 {
     #region STRUCTS
     //Simple struct to store our 2D map indexes
-    public struct Coord
+    public class Coord 
     {
         public int X;
         public int Y;
         public float Value;
+        public Coord Previous;
+        //public Coord Previous;
 
 
         public Coord(int x, int y, float value)
@@ -36,18 +39,28 @@ public class NavGrid : MonoBehaviour
         }
 
         //Get Property so we can easily calculate Vector2.Distance
-        public Vector2 ToVector
+        public Vector2 Vector
         {
             get { return new Vector2(X, Y); }
         }
 
+        //Override default comparers, class is equal if coordinates are the same, other fields don't matter for comparison
         public static bool operator ==(Coord c1, Coord c2)
         {
-            return c1.X == c2.X && c1.Y == c2.Y;
+            return c1?.X == c2?.X && c1?.Y == c2?.Y;
         }
         public static bool operator !=(Coord c1, Coord c2)
         {
-            return c1.X != c2.X && c1.Y != c2.Y;
+            return c1?.X != c2?.X && c1?.Y != c2?.Y;
+        }
+        public override bool Equals(object obj)
+        {
+            return obj is Coord coord &&
+                   X == coord?.X && Y == coord?.Y;
+        }
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(X, Y);
         }
     }
     #endregion
@@ -59,7 +72,8 @@ public class NavGrid : MonoBehaviour
     [SerializeField] private Map _map;
 
     [Header("Debug")]
-    [SerializeField] private List<float> borderValues;
+    [SerializeField] private List<float> _borderValues;
+    [SerializeField] private List<Vector2> _debugRoute;
 
     public NavGridPathNode[] GetPath(Vector3 origin, Vector3 destination)
     {
@@ -82,26 +96,24 @@ public class NavGrid : MonoBehaviour
     private IEnumerator CalculatePath(Coord origin, Coord destination)
     {
         //Create our cache of calculated nodes. Somewhat redundant now that value is stored in coord
-        Dictionary<Coord, float> costs = new Dictionary<Coord, float>();
-        //The cache for our current route. If we run into dead ends we can pop the stat
-        Stack<Coord> route = new Stack<Coord>();
+        Dictionary<Vector2, float> costs = new Dictionary<Vector2, float>();
         //The border list is our buffer for tiles we want to check. Treat this as a jank priority queue
         //Since Unity's C# version doesn't have one
         //To make this more efficient we could implement our own priority queue
         List<Coord> border = new List<Coord>();
+        Coord current = null;
         
         //Add our initial tile to the border
         origin.Value = GetFCost(origin, origin, destination);
-        costs.Add(origin, origin.Value); //Cache the cost
+        costs.Add(origin.Vector, origin.Value); //Cache the cost
         border.Insert(0, (origin)); //Insert at beginning
 
         //Start iterating through neighbors
         while (border.Count > 0)
         {
-            Coord current = border[0];
-            route.Push(current);
+            current = border[0];
             border.RemoveAt(0); //Dequeue
-            
+
             //If we have arrived at our destination, end the loop early
             if (current == destination) break;
 
@@ -113,27 +125,29 @@ public class NavGrid : MonoBehaviour
             {
                 //Calculate our cost if it is a movable area. Otherwise cost is -1
                 float cost = GetFCost(origin, neighbor, destination);
+                Vector2 neighborVector = neighbor.Vector;
 
                 //Cache the cost if we haven't cached a more effective value already
                 //This means we should add this neighbor to our border list
-                if(!costs.ContainsKey(neighbor) || costs[neighbor] > cost)
+                if(!costs.ContainsKey(neighborVector) || costs[neighborVector] > cost)
                 {
                     //Place tile in queue, ordered by ascending value
                     int index = 0;
                     while (index < border.Count && cost > border[index].Value)
-                    {
                         index++;
-                    }
 
-                    costs.Add(neighbor, cost);
-                    border.Insert(index, new Coord(neighbor.X, neighbor.Y, cost));
-                    Debug.DrawLine(_map.GetTilePos(neighbor), _map.GetTilePos(current), Color.cyan, 0.2f);
+                    neighbor.Value = cost;
+                    neighbor.Previous = current;
+
+                    costs.Add(neighborVector, cost); //Add this to our cost dictionary
+                    border.Insert(index, neighbor); //Insert a new coordinate with the recorded value
 
                     //Debug. Disregard
-                    borderValues = new List<float>();
+                    Debug.DrawLine(_map.GetTilePos(neighbor), _map.GetTilePos(current), Color.cyan, 0.2f);
+                    _borderValues = new List<float>();
                     foreach(Coord coord in border)
                     {
-                        borderValues.Add(coord.Value);
+                        _borderValues.Add(coord.Value);
                     }
                     //=================
                 }
@@ -143,16 +157,22 @@ public class NavGrid : MonoBehaviour
             yield return new WaitForSeconds(_timeStep);
         }
 
-
-        //Draw our finished path
-        Coord prevCoord = route.Peek();
-        while(route.Count > 0)
+        //The cache for our current route
+        Stack<Coord> route = new Stack<Coord>();
+        if (current != null)
         {
-            Coord coord = route.Pop();
-            Debug.DrawLine(_map.GetTilePos(prevCoord), _map.GetTilePos(coord), Color.green, 3f);
-            prevCoord = coord;
-            yield return new WaitForSeconds(0.1f);
+            _debugRoute = new List<Vector2>();
+            route.Push(current);
+            while (current.Previous != null)
+            {
+                Debug.DrawLine(_map.GetTilePos(current), _map.GetTilePos(current.Previous), Color.green, 2f);
+                current = current.Previous;
+                route.Push(current);
+                _debugRoute.Insert(0, current.Vector);
+                yield return new WaitForSeconds(0.1f);
+            }
         }
+        else Debug.LogError("Current was null");
     }
 
     //A simple function to get a list of neighboring indexes
@@ -174,6 +194,7 @@ public class NavGrid : MonoBehaviour
                 if (!_map.Grid[x, y].Walkable) continue;
                 //Add to list of possible neighbors if all conditions are met
                 neighbors.Add(new Coord(x, y));
+                Debug.DrawLine(_map.GetTilePos(origX, origY), _map.GetTilePos(x, y), Color.red, 0.1f);
             }
         }
 
@@ -183,8 +204,8 @@ public class NavGrid : MonoBehaviour
     //Calculate the total cost of this node using the built in Vector2.Distance function
     private float GetFCost(Coord origin, Coord target, Coord destination)
     {
-        float gCost = Vector2.Distance(origin.ToVector, target.ToVector);
-        float hCost = Vector2.Distance(target.ToVector, destination.ToVector);
+        float gCost = Vector2.Distance(origin.Vector, target.Vector);
+        float hCost = Vector2.Distance(target.Vector, destination.Vector);
         return gCost + hCost;
     }
 
