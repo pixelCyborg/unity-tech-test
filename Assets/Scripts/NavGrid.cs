@@ -71,17 +71,23 @@ public class NavGrid : MonoBehaviour
     [Header("References")]
     [SerializeField] private Map _map;
 
-    [Header("Debug")]
-    [SerializeField] private List<float> _borderValues;
-    [SerializeField] private List<Vector2> _debugRoute;
-
     public NavGridPathNode[] GetPath(Vector3 origin, Vector3 destination)
     {
-        return new NavGridPathNode[]
+        //Convert world points to coordinates
+        Coord start = _map.GetClosestCoordinates(origin);
+        Coord finish = _map.GetClosestCoordinates(destination);
+        Debug.DrawLine(_map.GetTilePos(start), _map.GetTilePos(finish), Color.yellow, 0.5f);
+
+        //Get our coordinates from the path and convert them to nodes
+        Coord[] coords = CalculatePath(start, finish);
+        NavGridPathNode[] nodes = new NavGridPathNode[coords.Length];
+        for (int i = 0; i < coords.Length; i++)
         {
-            new() { Position = origin },
-            new() { Position = destination }
-        };
+            //Convert our coord nodes into path nodes                     Always use user pos for height
+            nodes[i] = new NavGridPathNode() { Position = _map.GetTilePos(coords[i], origin.y) };
+        }
+
+        return nodes;
     }
 
     //G Cost = Distance from starting node
@@ -93,7 +99,7 @@ public class NavGrid : MonoBehaviour
     //2. Repeat above for lowest F Node cost.
     //3. Rinse and repeat, ignoring paths that lead us to walls
     //3a. If we find a lower FCost while calculating neighbors, replace that in our algorithm history
-    private IEnumerator CalculatePath(Coord origin, Coord destination)
+    private Coord[] CalculatePath(Coord origin, Coord destination)
     {
         //Create our cache of calculated nodes. Somewhat redundant now that value is stored in coord
         Dictionary<Vector2, float> costs = new Dictionary<Vector2, float>();
@@ -136,46 +142,40 @@ public class NavGrid : MonoBehaviour
                     while (index < border.Count && cost > border[index].Value)
                         index++;
 
+                    //Store the cost and link the neighbor tile back to our current
                     neighbor.Value = cost;
                     neighbor.Previous = current;
 
                     costs.Add(neighborVector, cost); //Add this to our cost dictionary
                     border.Insert(index, neighbor); //Insert a new coordinate with the recorded value
 
-                    //Debug. Disregard
                     Debug.DrawLine(_map.GetTilePos(neighbor), _map.GetTilePos(current), Color.cyan, 0.2f);
-                    _borderValues = new List<float>();
-                    foreach(Coord coord in border)
-                    {
-                        _borderValues.Add(coord.Value);
-                    }
-                    //=================
                 }
-                yield return new WaitForSeconds(_timeStep);
             }
-
-            yield return new WaitForSeconds(_timeStep);
         }
 
-        //The cache for our current route
+        //Retroactively check our "Previous" nodes until we have a full path
+        //Use a stack so that once we reach the beginning, that node will be at index 0
         Stack<Coord> route = new Stack<Coord>();
         if (current != null)
         {
-            _debugRoute = new List<Vector2>();
+            //Add the first node
             route.Push(current);
+            //Then iterate through previous nodes until none are left
             while (current.Previous != null)
             {
                 Debug.DrawLine(_map.GetTilePos(current), _map.GetTilePos(current.Previous), Color.green, 2f);
                 current = current.Previous;
                 route.Push(current);
-                _debugRoute.Insert(0, current.Vector);
-                yield return new WaitForSeconds(0.1f);
             }
         }
-        else Debug.LogError("Current was null");
+        else Debug.LogError("No route available");
+        return route.ToArray();
     }
 
     //A simple function to get a list of neighboring indexes
+    //To expand on this we could add stricter rules like corner tiles being blocked off by adjacent walls
+    //Or not getting diagonal tiles entirely
     private Coord[] GetNeighbors(int origX, int origY)
     {
         //Check neighbors. Since this is grid-based there are 8 directions to check
@@ -207,13 +207,5 @@ public class NavGrid : MonoBehaviour
         float gCost = Vector2.Distance(origin.Vector, target.Vector);
         float hCost = Vector2.Distance(target.Vector, destination.Vector);
         return gCost + hCost;
-    }
-
-    [NaughtyAttributes.Button]
-    public void TestMap()
-    {
-        StartCoroutine(
-            CalculatePath(new Coord(0, 0), 
-            new Coord(_map.Grid.GetLength(0) - 1, _map.Grid.GetLength(1) - 1)));
     }
 }

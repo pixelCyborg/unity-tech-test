@@ -115,12 +115,12 @@ public class Map : MonoBehaviour
         }
     }
 
-    public Vector3 GetTilePos(NavGrid.Coord coord)
+    //Methods for converting coordinates to world space
+    public Vector3 GetTilePos(NavGrid.Coord coord, float height = 0f)
     {
         return GetTilePos(coord.X, coord.Y);
     }
-
-    public Vector3 GetTilePos(int x, int y)
+    public Vector3 GetTilePos(int x, int y, float height = 0f)
     {
         //Determine instantiation pos
         Vector3 pos = Vector3.zero;
@@ -130,6 +130,30 @@ public class Map : MonoBehaviour
         //We want our root point to be in the center, so offset the tile by halfway points
         pos.x -= ((Grid.GetLength(0) - 1) / 2f) * _scale;
         pos.z -= ((Grid.GetLength(1) - 1) / 2f) * _scale;
-        return _tileRoot.position + pos;
+
+        //Add root position so we get the world pos, and adjust for height
+        pos = _tileRoot.position + pos;
+        pos.y = height;
+
+        return pos;
+    }
+
+    //And vice versa, we can use this to get coordinates from click positions
+    public NavGrid.Coord GetClosestCoordinates(Vector3 worldPos)
+    {
+        Debug.DrawRay(worldPos, Vector3.forward, Color.magenta, 1f);
+
+        //Get the local position on the grid
+        Vector3 localPos = _tileRoot.InverseTransformPoint(worldPos);
+        //Adjust positions to account for center anchor
+        localPos.x += ((Grid.GetLength(0) - 1) / 2f) * _scale;
+        localPos.z += ((Grid.GetLength(1) - 1) / 2f) * _scale;
+
+        //Build our coordinates from local position / scale
+        NavGrid.Coord coord = new NavGrid.Coord(
+            Mathf.RoundToInt(localPos.x / _scale),
+            Mathf.RoundToInt(localPos.z / _scale));
+
+        return coord;
     }
 }

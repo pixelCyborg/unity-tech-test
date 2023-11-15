@@ -3,6 +3,7 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
+    [SerializeField]
     private NavGridPathNode[] _currentPath = Array.Empty<NavGridPathNode>();
     private int _currentPathIndex = 0;
     
@@ -19,7 +20,11 @@ public class Player : MonoBehaviour
             var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             if (Physics.Raycast(ray, out var hitInfo))
             {
-                _currentPath = _grid.GetPath(transform.position, hitInfo.point);
+                //Adding this tidbit in since we are working in 2D space
+                Vector3 hitPos = hitInfo.point;
+                hitPos.y = transform.position.y;
+
+                _currentPath = _grid.GetPath(transform.position, hitPos);
                 _currentPathIndex = 0;
             }
         }
