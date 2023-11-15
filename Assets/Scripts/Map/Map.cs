@@ -19,6 +19,8 @@ public class Map : MonoBehaviour
     [Header("3D Config")]
     [SerializeField] public float _scale = 1f;
     [SerializeField] private Transform _tileRoot; //Parent transform to spawn tiles under
+    [SerializeField] private NavGrid _floor; //Floor should be a standard Unity plane mesh
+    [SerializeField] private Player _player;
 
     [Header("Prefabs")]
     [SerializeField] private GameObject[] _tilePrefabs; //Our tile prefab refs. Index corresponds to tile value
@@ -94,10 +96,41 @@ public class Map : MonoBehaviour
                 //Instantiate the object and place it accordingly
                 GameObject go = Instantiate(prefab, _tileRoot);
                 go.name = $"Tile [{x},{y}]";
-                go.transform.position = GetTilePos(x, y);
-                go.transform.localScale = Vector3.one * _scale;
+                go.transform.position = GetTilePos(x, y, _tileRoot.position.y);
+                go.transform.localScale = new Vector3(1f * _scale, 1f, 1f * _scale);
             }
         }
+
+        if (_floor != null)
+        {
+            Vector3 floorScale = Vector3.one;
+            floorScale.x = _width * _scale * 0.1f;
+            floorScale.z = _height * _scale * 0.1f;
+            _floor.transform.localScale = floorScale;
+        }
+
+        //Randomize player pos
+        PlacePlayerInEmptySpace();
+    }
+
+    //Randomly select tiles until finding an empty one, 
+    private void PlacePlayerInEmptySpace()
+    {
+        if (_player == null) return;
+        if (Grid == null) return;
+
+        int failsafe = 99; //Use a limited number of trys in case there are no suitable positions
+        int x = Random.Range(0, Grid.GetLength(0));
+        int y = Random.Range(0, Grid.GetLength(1));
+
+        while(!Grid[x,y].Walkable && failsafe > 0)
+        {
+            x = Random.Range(0, Grid.GetLength(0));
+            y = Random.Range(0, Grid.GetLength(1));
+            failsafe--;
+        }
+
+        _player.transform.position = GetTilePos(x, y, _player.transform.position.y);
     }
 
     //Clear out our previous map
