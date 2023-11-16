@@ -174,8 +174,6 @@ public class Map : MonoBehaviour
     //And vice versa, we can use this to get coordinates from click positions
     public NavGrid.Coord GetClosestCoordinates(Vector3 worldPos)
     {
-        Debug.DrawRay(worldPos, Vector3.forward, Color.magenta, 1f);
-
         //Get the local position on the grid
         Vector3 localPos = _tileRoot.InverseTransformPoint(worldPos);
         //Adjust positions to account for center anchor

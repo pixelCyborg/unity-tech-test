@@ -76,12 +76,13 @@ public class NavGrid : MonoBehaviour
         //Convert world points to coordinates
         Coord start = _map.GetClosestCoordinates(origin);
         Coord finish = _map.GetClosestCoordinates(destination);
-        Debug.DrawLine(_map.GetTilePos(start), _map.GetTilePos(finish), Color.yellow, 0.5f);
 
         //Get our coordinates from the path and convert them to nodes
         Coord[] coords = CalculatePath(start, finish);
         NavGridPathNode[] nodes = new NavGridPathNode[coords.Length];
-        for (int i = 0; i < coords.Length; i++)
+
+        nodes[0] = new NavGridPathNode() { Position = origin }; //Use the original position for 1st node to avoid snapping to tiles mid-movement
+        for (int i = 1; i < coords.Length; i++)
         {
             //Convert our coord nodes into path nodes                     Always use user pos for height
             nodes[i] = new NavGridPathNode() { Position = _map.GetTilePos(coords[i], origin.y) };
@@ -108,6 +109,8 @@ public class NavGrid : MonoBehaviour
         //To make this more efficient we could implement our own priority queue
         List<Coord> border = new List<Coord>();
         Coord current = null;
+        //A simple flag to tell us if we succesfully reached the goal.
+        bool _destinationReached = false;
         
         //Add our initial tile to the border
         origin.Value = GetFCost(origin, origin, destination);
@@ -121,7 +124,11 @@ public class NavGrid : MonoBehaviour
             border.RemoveAt(0); //Dequeue
 
             //If we have arrived at our destination, end the loop early
-            if (current == destination) break;
+            if (current == destination)
+            {
+                _destinationReached = true;
+                break;
+            }
 
             Coord[] neighbors = GetNeighbors(current.X, current.Y);
             if (neighbors.Length == 0) continue; //If there is no viable spot to go, move on to next border
@@ -154,22 +161,26 @@ public class NavGrid : MonoBehaviour
             }
         }
 
+        //If we reached the destination, build a round out of linked "Previous" nodes
         //Retroactively check our "Previous" nodes until we have a full path
         //Use a stack so that once we reach the beginning, that node will be at index 0
         Stack<Coord> route = new Stack<Coord>();
-        if (current != null)
+        if (_destinationReached && current != null)
         {
             //Add the first node
             route.Push(current);
             //Then iterate through previous nodes until none are left
             while (current.Previous != null)
             {
-                Debug.DrawLine(_map.GetTilePos(current), _map.GetTilePos(current.Previous), Color.green, 2f);
                 current = current.Previous;
                 route.Push(current);
             }
         }
-        else Debug.LogError("No route available");
+        else //If we fail to make it to our goal, return our origin node
+        {
+            Debug.LogError("No route available");
+            route.Push(origin);
+        }
         return route.ToArray();
     }
 
@@ -194,7 +205,6 @@ public class NavGrid : MonoBehaviour
                 if (!_map.Grid[x, y].Walkable) continue;
                 //Add to list of possible neighbors if all conditions are met
                 neighbors.Add(new Coord(x, y));
-                Debug.DrawLine(_map.GetTilePos(origX, origY), _map.GetTilePos(x, y), Color.red, 0.1f);
             }
         }
 
