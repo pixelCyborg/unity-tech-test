@@ -25,10 +25,46 @@ public class Map : MonoBehaviour
     [Header("Prefabs")]
     [SerializeField] private GameObject[] _tilePrefabs; //Our tile prefab refs. Index corresponds to tile value
 
+    //Easily accessible edit mode flag;
+    public static bool EditMode = false;
+    private Dictionary<NavGrid.Coord, GameObject> _spawnedTiles;
+    private GameObject _editModeMarker;
+
     private void Start()
     {
         //Generate a new map on start with our config width & height
         GenerateMapWithSettings();
+    }
+
+    private void Update()
+    {
+        //Toggle tiles on click while in edit mode
+        if(EditMode)
+        {
+            // Check Input
+            if (Input.GetMouseButtonUp(0))
+            {
+                var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                if (Physics.Raycast(ray, out var hitInfo))
+                {
+                    Vector3 hitPos = hitInfo.point;
+                    NavGrid.Coord coord = GetClosestCoordinates(hitPos);
+
+                    //Verify our coordinates
+                    if (coord.X >= 0 && coord.Y >= 0
+                        && coord.X < Grid.GetLength(0)
+                        && coord.Y < Grid.GetLength(1))
+                    {
+                        //Toggle the grid
+                        Grid[coord.X, coord.Y].Value = Grid[coord.X, coord.Y].Value == 0 ? 1 : 0;
+                        if(_spawnedTiles[coord].gameObject != null) 
+                            Destroy(_spawnedTiles[coord].gameObject);
+
+                        _spawnedTiles[coord] = SpawnTile(coord.X, coord.Y, Grid[coord.X, coord.Y].Value);
+                    }
+                }
+            }
+        }
     }
 
     [NaughtyAttributes.Button]
@@ -62,6 +98,9 @@ public class Map : MonoBehaviour
 
         //After map is generated, show it in 3D
         RenderMap();
+
+        //Randomize player pos
+        PlacePlayerInEmptySpace();
     }
     
     //Generate a 3D representation of our map
@@ -89,15 +128,8 @@ public class Map : MonoBehaviour
                     continue;
                 }
 
-                //Look for a prefab associated with the tile value
-                GameObject prefab = _tilePrefabs[Grid[x, y].Value];
-                if (prefab == null) continue; //If no prefab available, skip this tile
-
                 //Instantiate the object and place it accordingly
-                GameObject go = Instantiate(prefab, _tileRoot);
-                go.name = $"Tile [{x},{y}]";
-                go.transform.position = GetTilePos(x, y, _tileRoot.position.y);
-                go.transform.localScale = new Vector3(1f * _scale, go.transform.localScale.y, 1f * _scale);
+                _spawnedTiles.Add(new NavGrid.Coord(x, y), SpawnTile(x, y, Grid[x, y].Value));
             }
         }
 
@@ -108,9 +140,19 @@ public class Map : MonoBehaviour
             floorScale.z = _height * _scale * 0.1f;
             _floor.transform.localScale = floorScale;
         }
+    }
 
-        //Randomize player pos
-        PlacePlayerInEmptySpace();
+    private GameObject SpawnTile(int x, int y, int tileType)
+    {
+        //Look for the prefab with value
+        GameObject prefab = _tilePrefabs[tileType];
+        if (prefab == null) return null; //If no prefab available, skip
+        //Instantiate the object and place it accordingly
+        GameObject go = Instantiate(prefab, _tileRoot);
+        go.name = $"Tile [{x},{y}]";
+        go.transform.position = GetTilePos(x, y, _tileRoot.position.y);
+        go.transform.localScale = new Vector3(1f * _scale, go.transform.localScale.y, 1f * _scale);
+        return go;
     }
 
     //Randomly select tiles until finding an empty one, 
@@ -142,6 +184,7 @@ public class Map : MonoBehaviour
             return;
         }
 
+        _spawnedTiles = new Dictionary<NavGrid.Coord, GameObject>();
         for(int i = _tileRoot.childCount - 1; i >= 0; i--) //Iterate backwards through children and destroy them
         {
             DestroyImmediate(_tileRoot.GetChild(i).gameObject);
@@ -186,5 +229,30 @@ public class Map : MonoBehaviour
             Mathf.RoundToInt(localPos.z / _scale));
 
         return coord;
+    }
+
+    public void ToggleEditMode()
+    {
+        EditMode = !EditMode;
+
+        if (_editModeMarker == null) CreateEditGrid();
+        _editModeMarker.gameObject.SetActive(EditMode);
+    }
+    private void CreateEditGrid()
+    {
+        if (_editModeMarker != null) return;
+        _editModeMarker = new GameObject("Edit Mode");
+        for (int x = 0; x < Grid.GetLength(0); x++) //Rows
+        {
+            for (int y = 0; y < Grid.GetLength(1); y++) //Columns
+            {
+                //Look for the prefab with value
+                GameObject prefab = _tilePrefabs[2];
+                GameObject go = Instantiate(prefab, _editModeMarker.transform);
+                go.name = $"Edit [{x},{y}]";
+                go.transform.position = GetTilePos(x, y, _editModeMarker.transform.position.y);
+                go.transform.localScale = new Vector3(1f * _scale, go.transform.localScale.y, 1f * _scale);
+            }
+        }
     }
 }

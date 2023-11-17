@@ -102,7 +102,7 @@ public class NavGrid : MonoBehaviour
     //3a. If we find a lower FCost while calculating neighbors, replace that in our algorithm history
     private Coord[] CalculatePath(Coord origin, Coord destination)
     {
-        //Create our cache of calculated nodes. Somewhat redundant now that value is stored in coord
+        //Create our cache of calculated node costs. These costs are for the TOTAL value of pathing to a node
         Dictionary<Vector2, float> costs = new Dictionary<Vector2, float>();
         //The border list is our buffer for tiles we want to check. Treat this as a jank priority queue
         //Since Unity's C# version doesn't have one
@@ -136,8 +136,8 @@ public class NavGrid : MonoBehaviour
             //Check all walkable neighbors of current tile
             foreach (Coord neighbor in neighbors)
             {
-                //Calculate our cost if it is a movable area. Otherwise cost is -1
-                float cost = GetFCost(origin, neighbor, destination);
+                //Calculate our pathing cost if it is a movable area. Otherwise cost is -1
+                float cost = GetFCost(origin, neighbor, destination) + costs[current.Vector];
                 Vector2 neighborVector = neighbor.Vector;
 
                 //Cache the cost if we haven't cached a more effective value already

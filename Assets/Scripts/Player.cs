@@ -36,7 +36,7 @@ public class Player : MonoBehaviour
     void Update()
     {
         // Check Input
-        if (Input.GetMouseButtonUp(0))
+        if (Input.GetMouseButtonUp(0) && !Map.EditMode)
         {
             var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             if (Physics.Raycast(ray, out var hitInfo))
