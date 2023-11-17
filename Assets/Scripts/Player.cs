@@ -5,8 +5,6 @@ using System.Collections.Generic;
 public class Player : MonoBehaviour
 {
     [Header("Pathing")]
-    [SerializeField]
-    private NavGridPathNode[] _currentPath = Array.Empty<NavGridPathNode>();
     [SerializeField] private NavGrid _grid; //A reference to our navigation grid
     [SerializeField] private float _bezierAnchorWeight = 0.5f;
 
@@ -19,10 +17,21 @@ public class Player : MonoBehaviour
     [SerializeField] private float _accelerationRate = 1f; //Rate at which we follow our curve
     private float _accelerationTime; //For keeping track of how long we've been accelerating
 
+    [Header("QoL")]
+    [SerializeField] private GameObject _destinationMarker; //Set at path destination
+    [SerializeField] private ParticleSystem _particles;
+
     [Header("Display Only")]
+    [SerializeField]
+    private NavGridPathNode[] _currentPath = Array.Empty<NavGridPathNode>();
     [SerializeField] private int _currentPathIndex = 0;
     //Bezier Navigation
     [SerializeField] private float _bezierPoint = 0f;
+
+    private void Start()
+    {
+        if (_destinationMarker) _destinationMarker.SetActive(false);
+    }
 
     void Update()
     {
@@ -39,13 +48,23 @@ public class Player : MonoBehaviour
                 _currentPath = _grid.GetPath(transform.position, hitPos);
                 _currentPathIndex = 0;
                 _bezierPoint = 0f; //Reset the bezier point as well
+
+                if (_destinationMarker != null && _currentPath.Length > 0) //If we have a valid path, set our destination marker
+                {
+                    _destinationMarker.transform.position = _currentPath[_currentPath.Length - 1].Position;
+                    _destinationMarker.SetActive(true);
+                }
             }
         }
 
         TraverseCurve();
 
         _accelerationTime += Time.deltaTime * _accelerationRate; //Keep track of how long we've been accelerating
-        if (_currentPathIndex == _currentPath.Length - 1) _accelerationTime = 0f; //If we are not moving, reset acceleration time
+        if (_currentPathIndex == _currentPath.Length - 1)
+        {
+            _accelerationTime = 0f; //If we are not moving, reset acceleration time
+            _destinationMarker?.SetActive(false); //And hide the marker
+        }
     }
     //Bezier-Focused movement function
     private void TraverseCurve()
@@ -152,6 +171,15 @@ public class Player : MonoBehaviour
     private float CalcBezierValue(float a, float b, float t)
     {
         return (1 - t) * a + (t * b);
+    }
+
+    public void ResetPath()
+    {
+        _currentPath = new NavGridPathNode[0];
+        _currentPathIndex = 0;
+        _bezierPoint = 0f;
+        _destinationMarker?.SetActive(false);
+        _particles?.Clear();
     }
 
     //UNUSED =====================================

@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 9117636821417970883}
+  - component: {fileID: 4510160479997132220}
   m_Layer: 0
   m_Name: Obstacle Tile
   m_TagString: Untagged
@@ -32,6 +33,20 @@ Transform:
   - {fileID: 225347122810095984}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4510160479997132220
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7644113141418472029}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e58d8337ab4102947aa3a5de09199cde, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _minHeight: 0.5
+  _maxHeight: 1.5
 --- !u!1 &8914142885910644424
 GameObject:
   m_ObjectHideFlags: 0

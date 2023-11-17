@@ -97,7 +97,7 @@ public class Map : MonoBehaviour
                 GameObject go = Instantiate(prefab, _tileRoot);
                 go.name = $"Tile [{x},{y}]";
                 go.transform.position = GetTilePos(x, y, _tileRoot.position.y);
-                go.transform.localScale = new Vector3(1f * _scale, 1f, 1f * _scale);
+                go.transform.localScale = new Vector3(1f * _scale, go.transform.localScale.y, 1f * _scale);
             }
         }
 
