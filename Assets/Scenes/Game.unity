@@ -6639,7 +6639,7 @@ MonoBehaviour:
   _width: 12
   _height: 12
   _obstacleChance: 15
-  _scale: 4
+  _scale: 2
   _tileRoot: {fileID: 723255809}
   _floor: {fileID: 366829866}
   _player: {fileID: 861844567}
